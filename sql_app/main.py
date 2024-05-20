@@ -1,15 +1,17 @@
 from typing import List
-
 from fastapi import Depends, FastAPI, HTTPException
 from sqlalchemy.orm import Session
-
 from . import crud, models, schemas
 from .database import SessionLocal, engine
+from .dependency import (
+    before_endpoint1,
+    after_endpoint1,
+    get_endpoint_tasks
+)
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
-
 
 # Dependency
 def get_db():
@@ -53,3 +55,14 @@ def create_item_for_user(
 def read_items(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
     items = crud.get_items(db, skip=skip, limit=limit)
     return items
+
+
+# Test Dependency Injection
+@app.get("/endpoint1")
+async def endpoint1(dep_before: None = Depends(before_endpoint1), dep_after: None = Depends(after_endpoint1)):
+    return {"message": "Endpoint 1 executed"}
+
+# Example endpoint using the dependency
+@app.get("/example_endpoint")
+async def example_endpoint(dep: None = Depends(get_endpoint_tasks("Mark"))):
+    return {"message": "Example endpoint executed"}
